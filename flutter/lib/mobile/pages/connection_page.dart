@@ -238,6 +238,11 @@ class _ConnectionPageState extends State<ConnectionPage> {
                           labelText: translate('Remote ID'),
                           // hintText: 'Enter your remote ID',
                           border: InputBorder.none,
+                          focusedBorder: isAndroid
+                              ? OutlineInputBorder(
+                                  borderSide: BorderSide(color: MyTheme.accent),
+                                )
+                              : null,
                           helperStyle: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -336,6 +341,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
                 width: 60,
                 height: 60,
                 child: IconButton(
+                  autofocus: isAndroid,
                   icon: const Icon(Icons.arrow_forward,
                       color: MyTheme.darkGray, size: 45),
                   onPressed: onConnect,

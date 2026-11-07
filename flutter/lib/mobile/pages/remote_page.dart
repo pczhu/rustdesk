@@ -67,6 +67,7 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
   late final StreamSubscription<bool> keyboardSubscription;
   final FocusNode _mobileFocusNode = FocusNode();
   final FocusNode _physicalFocusNode = FocusNode();
+  final FocusScopeNode _toolbarFocusNode = FocusScopeNode();
   var _showEdit = false; // use soft keyboard
 
   InputModel get inputModel => gFFI.inputModel;
@@ -130,6 +131,7 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
     await gFFI.invokeMethod("enable_soft_keyboard", true);
     _mobileFocusNode.dispose();
     _physicalFocusNode.dispose();
+    _toolbarFocusNode.dispose();
     await gFFI.close();
     _timer?.cancel();
     _timerDidChangeMetrics?.cancel();
@@ -356,6 +358,10 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
 
     return WillPopScope(
       onWillPop: () async {
+        if (isAndroid && _toolbarFocusNode.hasFocus) {
+          _physicalFocusNode.requestFocus();
+          return false;
+        }
         clientClose(sessionId, gFFI.dialogManager);
         return false;
       },
@@ -454,12 +460,47 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
           ? RawKeyFocusScope(
               focusNode: _physicalFocusNode,
               inputModel: inputModel,
+              onKeyEvent: isAndroid ? _handleDpadToolbarKey : null,
               child: child)
           : child,
     );
   }
 
   Widget getBottomAppBar() {
+    final bar = _buildBottomAppBar();
+    return isAndroid
+        ? FocusScope(
+            node: _toolbarFocusNode,
+            child: Theme(
+              data: Theme.of(context).copyWith(focusColor: Colors.white38),
+              child: bar,
+            ),
+          )
+        : bar;
+  }
+
+  KeyEventResult _handleDpadToolbarKey(KeyEvent event) {
+    if (event.logicalKey != LogicalKeyboardKey.select &&
+        event.logicalKey != LogicalKeyboardKey.contextMenu) {
+      return KeyEventResult.ignored;
+    }
+    if (event is KeyDownEvent) {
+      setState(() {
+        _showGestureHelp = false;
+        _showBar = true;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _toolbarFocusNode.requestFocus();
+        if (_toolbarFocusNode.focusedChild == null) {
+          _toolbarFocusNode.nextFocus();
+        }
+      });
+    }
+    return KeyEventResult.handled;
+  }
+
+  Widget _buildBottomAppBar() {
     final ffiModel = Provider.of<FfiModel>(context);
     return BottomAppBar(
       elevation: 10,
@@ -551,6 +592,7 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
                     ? null
                     : () {
                         setState(() => _showBar = !_showBar);
+                        if (isAndroid) _physicalFocusNode.requestFocus();
                       },
               )),
         ],

@@ -12,6 +12,7 @@ import '../../common.dart';
 import '../../common/formatter/id_formatter.dart';
 import '../../models/peer_model.dart';
 import '../../models/platform_model.dart';
+import '../../mobile/widgets/dpad_focus.dart';
 import '../../desktop/widgets/material_mod_popup_menu.dart' as mod_menu;
 import '../../desktop/widgets/popup_menu.dart';
 import 'dart:math' as math;
@@ -61,23 +62,28 @@ class _PeerCardState extends State<_PeerCard>
   Widget gestureDetector({required Widget child}) {
     final PeerTabModel peerTabModel = Provider.of(context);
     final peer = super.widget.peer;
-    return GestureDetector(
+    void onTap() {
+      if (peerTabModel.multiSelectionMode) {
+        peerTabModel.select(peer);
+      } else {
+        if (isMobile) {
+          widget.connect(context, peer.id);
+        } else {
+          peerTabModel.select(peer);
+        }
+      }
+    }
+
+    final detector = GestureDetector(
         onDoubleTap: peerTabModel.multiSelectionMode
             ? null
             : () => widget.connect(context, peer.id),
-        onTap: () {
-          if (peerTabModel.multiSelectionMode) {
-            peerTabModel.select(peer);
-          } else {
-            if (isMobile) {
-              widget.connect(context, peer.id);
-            } else {
-              peerTabModel.select(peer);
-            }
-          }
-        },
+        onTap: onTap,
         onLongPress: () => peerTabModel.select(peer),
         child: child);
+    return isAndroid
+        ? DpadFocus(onPressed: onTap, child: detector)
+        : detector;
   }
 
   Widget _buildPortrait() {
@@ -388,7 +394,10 @@ class _PeerCardState extends State<_PeerCard>
             _menuPos = RelativeRect.fromLTRB(x, y, x, y);
           },
           onTap: () {
-            _showPeerMenu(peer.id);
+            _showPeerMenu(peer.id,
+                fromKeyboard: isAndroid &&
+                    FocusManager.instance.highlightMode ==
+                        FocusHighlightMode.traditional);
           });
     }
   }
@@ -419,14 +428,22 @@ class _PeerCardState extends State<_PeerCard>
     }
   }
 
-  Widget _actionMore(Peer peer) => Listener(
-      onPointerDown: (e) {
-        final x = e.position.dx;
-        final y = e.position.dy;
-        _menuPos = RelativeRect.fromLTRB(x, y, x, y);
-      },
-      onPointerUp: (_) => _showPeerMenu(peer.id),
-      child: build_more(context));
+  Widget _actionMore(Peer peer) {
+    final listener = Listener(
+        onPointerDown: (e) {
+          final x = e.position.dx;
+          final y = e.position.dy;
+          _menuPos = RelativeRect.fromLTRB(x, y, x, y);
+        },
+        onPointerUp: (_) => _showPeerMenu(peer.id),
+        child: build_more(context));
+    return isAndroid
+        ? DpadFocus(
+            onPressed: () => _showPeerMenu(peer.id, fromKeyboard: true),
+            child: ExcludeFocus(child: listener),
+          )
+        : listener;
+  }
 
   bool _shouldBuildPasswordIcon(Peer peer) {
     if (gFFI.peerTabModel.currentTab != PeerTabIndex.ab.index) return false;
@@ -436,7 +453,17 @@ class _PeerCardState extends State<_PeerCard>
 
   /// Show the peer menu and handle user's choice.
   /// User might remove the peer or send a file to the peer.
-  void _showPeerMenu(String id) async {
+  void _showPeerMenu(String id, {bool fromKeyboard = false}) async {
+    if (fromKeyboard) {
+      final box = FocusManager.instance.primaryFocus?.context?.findRenderObject();
+      final overlay = Overlay.of(context).context.findRenderObject();
+      if (box is RenderBox && overlay is RenderBox) {
+        _menuPos = RelativeRect.fromRect(
+          box.localToGlobal(Offset.zero, ancestor: overlay) & box.size,
+          Offset.zero & overlay.size,
+        );
+      }
+    }
     await mod_menu.showMenu(
       context: context,
       position: _menuPos,
