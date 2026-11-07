@@ -1237,7 +1237,10 @@ void msgBox(SessionID sessionId, String type, String title, String text,
   dialogManager.show(
     (setState, close, context) => CustomAlertDialog(
       title: null,
-      content: SelectionArea(child: msgboxContent(type, title, text)),
+      content: ExcludeFocusTraversal(
+        excluding: isAndroid,
+        child: SelectionArea(child: msgboxContent(type, title, text)),
+      ),
       actions: buttons,
       onSubmit: hasOk ? submit : null,
       onCancel: hasCancel == true ? cancel : null,
