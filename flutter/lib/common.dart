@@ -1065,7 +1065,7 @@ class CustomAlertDialog extends StatelessWidget {
     Future.delayed(Duration.zero, () {
       if (!scopeNode.hasFocus) scopeNode.requestFocus();
     });
-    bool tabTapped = false;
+    bool focusTraversed = false;
     if (isAndroid) gFFI.invokeMethod("enable_soft_keyboard", true);
 
     return FocusScope(
@@ -1077,7 +1077,18 @@ class CustomAlertDialog extends StatelessWidget {
             onCancel?.call();
           }
           return KeyEventResult.handled; // avoid TextField exception on escape
-        } else if (!tabTapped &&
+        } else if (isAndroid &&
+            (key.logicalKey == LogicalKeyboardKey.arrowUp ||
+                key.logicalKey == LogicalKeyboardKey.arrowDown)) {
+          if (key is RawKeyDownEvent) {
+            focusTraversed = true;
+            scopeNode.focusInDirection(
+                key.logicalKey == LogicalKeyboardKey.arrowUp
+                    ? TraversalDirection.up
+                    : TraversalDirection.down);
+          }
+          return KeyEventResult.handled;
+        } else if (!focusTraversed &&
             onSubmit != null &&
             (key.logicalKey == LogicalKeyboardKey.enter ||
                 key.logicalKey == LogicalKeyboardKey.numpadEnter)) {
@@ -1086,7 +1097,7 @@ class CustomAlertDialog extends StatelessWidget {
         } else if (key.logicalKey == LogicalKeyboardKey.tab) {
           if (key is RawKeyDownEvent) {
             scopeNode.nextFocus();
-            tabTapped = true;
+            focusTraversed = true;
           }
           return KeyEventResult.handled;
         }

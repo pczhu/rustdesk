@@ -53,6 +53,62 @@ class _GestureHelpState extends State<GestureHelp> {
     _selectedIndex = _touchMode ? 1 : 0;
   }
 
+  void _onToggle(int? index) {
+    setState(() {
+      if (_selectedIndex != index) {
+        _selectedIndex = index ?? 0;
+        _touchMode = index == 0 ? false : true;
+        widget.onTouchModeChange(_touchMode);
+      }
+    });
+  }
+
+  Widget _buildModeSwitch(BuildContext context) {
+    final labels = [translate("Mouse mode"), translate("Touch mode")];
+    const icons = [Icons.mouse, Icons.touch_app];
+    if (!isAndroid) {
+      return ToggleSwitch(
+        initialLabelIndex: _selectedIndex,
+        activeFgColor: Colors.white,
+        inactiveFgColor: Colors.white60,
+        activeBgColor: [MyTheme.accent],
+        inactiveBgColor: Theme.of(context).hintColor,
+        totalSwitches: 2,
+        minWidth: 150,
+        fontSize: 15,
+        iconSize: 18,
+        labels: labels,
+        icons: icons,
+        onToggle: _onToggle,
+      );
+    }
+    return Material(
+      color: Theme.of(context).hintColor,
+      borderRadius: BorderRadius.circular(8),
+      child: ToggleButtons(
+        isSelected: [_selectedIndex == 0, _selectedIndex == 1],
+        onPressed: _onToggle,
+        fillColor: MyTheme.accent,
+        selectedColor: Colors.white,
+        color: Colors.white60,
+        focusColor: Colors.white38,
+        borderRadius: BorderRadius.circular(8),
+        constraints: const BoxConstraints(minWidth: 150, minHeight: 40),
+        children: List.generate(
+          2,
+          (index) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icons[index], size: 18),
+              const SizedBox(width: 8),
+              Text(labels[index], style: const TextStyle(fontSize: 15)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -70,28 +126,7 @@ class _GestureHelpState extends State<GestureHelp> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
-                ToggleSwitch(
-                  initialLabelIndex: _selectedIndex,
-                  activeFgColor: Colors.white,
-                  inactiveFgColor: Colors.white60,
-                  activeBgColor: [MyTheme.accent],
-                  inactiveBgColor: Theme.of(context).hintColor,
-                  totalSwitches: 2,
-                  minWidth: 150,
-                  fontSize: 15,
-                  iconSize: 18,
-                  labels: [translate("Mouse mode"), translate("Touch mode")],
-                  icons: [Icons.mouse, Icons.touch_app],
-                  onToggle: (index) {
-                    setState(() {
-                      if (_selectedIndex != index) {
-                        _selectedIndex = index ?? 0;
-                        _touchMode = index == 0 ? false : true;
-                        widget.onTouchModeChange(_touchMode);
-                      }
-                    });
-                  },
-                ),
+                _buildModeSwitch(context),
                 const SizedBox(height: 30),
                 Container(
                     child: Wrap(

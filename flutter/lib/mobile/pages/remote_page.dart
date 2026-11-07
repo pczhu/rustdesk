@@ -358,7 +358,8 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
 
     return WillPopScope(
       onWillPop: () async {
-        if (isAndroid && _toolbarFocusNode.hasFocus) {
+        if (isAndroid && (_toolbarFocusNode.hasFocus || _showGestureHelp)) {
+          if (_showGestureHelp) setState(() => _showGestureHelp = false);
           _physicalFocusNode.requestFocus();
           return false;
         }
@@ -390,6 +391,7 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
                         _physicalFocusNode.requestFocus();
                       } else if (_showGestureHelp) {
                         _showGestureHelp = false;
+                        if (isAndroid) _physicalFocusNode.requestFocus();
                       } else {
                         _showBar = !_showBar;
                       }
@@ -466,17 +468,26 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
     );
   }
 
-  Widget getBottomAppBar() {
-    final bar = _buildBottomAppBar();
+  Widget getBottomAppBar() => _withToolbarFocus(_buildBottomAppBar());
+
+  Widget _withToolbarFocus(Widget child) {
     return isAndroid
         ? FocusScope(
             node: _toolbarFocusNode,
             child: Theme(
               data: Theme.of(context).copyWith(focusColor: Colors.white38),
-              child: bar,
+              child: child,
             ),
           )
-        : bar;
+        : child;
+  }
+
+  void _focusToolbar() {
+    if (!mounted) return;
+    _toolbarFocusNode.requestFocus();
+    if (_toolbarFocusNode.focusedChild == null) {
+      _toolbarFocusNode.nextFocus();
+    }
   }
 
   KeyEventResult _handleDpadToolbarKey(KeyEvent event) {
@@ -489,13 +500,7 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
         _showGestureHelp = false;
         _showBar = true;
       });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _toolbarFocusNode.requestFocus();
-        if (_toolbarFocusNode.focusedChild == null) {
-          _toolbarFocusNode.nextFocus();
-        }
-      });
+      WidgetsBinding.instance.addPostFrameCallback((_) => _focusToolbar());
     }
     return KeyEventResult.handled;
   }
@@ -552,8 +557,15 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
                                 icon: Icon(gFFI.ffiModel.touchMode
                                     ? Icons.touch_app
                                     : Icons.mouse),
-                                onPressed: () => setState(
-                                    () => _showGestureHelp = !_showGestureHelp),
+                                onPressed: () {
+                                  setState(() =>
+                                      _showGestureHelp = !_showGestureHelp);
+                                  if (isAndroid && _showGestureHelp) {
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback(
+                                            (_) => _focusToolbar());
+                                  }
+                                },
                               ),
                             ]) +
                   (isWeb
@@ -818,8 +830,8 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
   }
 
   /// aka changeTouchMode
-  BottomAppBar getGestureHelp() {
-    return BottomAppBar(
+  Widget getGestureHelp() {
+    return _withToolbarFocus(BottomAppBar(
         child: SingleChildScrollView(
             controller: ScrollController(),
             padding: EdgeInsets.symmetric(vertical: 10),
@@ -830,7 +842,7 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
                   final v = gFFI.ffiModel.touchMode ? 'Y' : '';
                   bind.sessionPeerOption(
                       sessionId: sessionId, name: kOptionTouchMode, value: v);
-                })));
+                }))));
   }
 
   // * Currently mobile does not enable map mode
