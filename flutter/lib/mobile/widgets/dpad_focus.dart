@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// 为只有触摸手势的控件补充方向键焦点和确认操作。
+/// Adds D-pad focus and activation to widgets that only handle touch gestures.
 class DpadFocus extends StatefulWidget {
   const DpadFocus({
     super.key,

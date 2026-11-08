@@ -4,7 +4,8 @@ import 'package:flutter_hbb/mobile/widgets/dpad_focus.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('按键导航显示边框，触摸后隐藏边框', (tester) async {
+  testWidgets('Keyboard navigation shows the border and touch hides it',
+      (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: DpadFocus(
@@ -33,7 +34,9 @@ void main() {
     expect(borderColor(), Colors.transparent);
   });
 
-  testWidgets('方向键移动焦点，确认键只触发当前控件', (tester) async {
+  testWidgets(
+      'Arrow keys move focus and confirm activates only the focused widget',
+      (tester) async {
     final activations = <int>[];
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
@@ -60,7 +63,8 @@ void main() {
     expect(activations, [0, 1, 0]);
   });
 
-  testWidgets('嵌套的更多按钮不会误触发设备连接', (tester) async {
+  testWidgets('The nested more button does not trigger a device connection',
+      (tester) async {
     var connections = 0;
     var menus = 0;
     await tester.pumpWidget(MaterialApp(
@@ -90,7 +94,8 @@ void main() {
     expect(connections, 0);
   });
 
-  testWidgets('焦点移到屏幕外的控件时自动滚动', (tester) async {
+  testWidgets('Focusing an offscreen widget scrolls it into view',
+      (tester) async {
     final scrollController = ScrollController();
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
@@ -127,7 +132,9 @@ void main() {
     scrollController.dispose();
   });
 
-  testWidgets('触摸仍由原来的手势处理，不重复执行', (tester) async {
+  testWidgets(
+      'Touch uses the original gesture handler without duplicate activation',
+      (tester) async {
     var taps = 0;
     var confirmations = 0;
     await tester.pumpWidget(MaterialApp(

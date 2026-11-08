@@ -17,7 +17,8 @@ class RawKeyFocusScope extends StatelessWidget {
   final FocusNode? focusNode;
   final ValueChanged<bool>? onFocusChange;
   final InputModel inputModel;
-  /// 界面优先处理本地按键，未处理的按键继续沿用远程输入逻辑。
+
+  /// Handles local key events first and forwards unhandled events to remote input.
   final KeyEventResult Function(KeyEvent)? onKeyEvent;
   final Widget child;
 

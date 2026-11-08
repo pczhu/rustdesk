@@ -18,7 +18,9 @@ class _RecordingInputModel implements InputModel {
 }
 
 void main() {
-  testWidgets('未设置本地按键处理时，按下和松开都沿用原来的输入处理', (tester) async {
+  testWidgets(
+      'Key down and key up use the original input handler without a local handler',
+      (tester) async {
     final input = _RecordingInputModel();
     await tester.pumpWidget(MaterialApp(
       home: RawKeyFocusScope(inputModel: input, child: const SizedBox()),
@@ -30,7 +32,9 @@ void main() {
     expect(input.events.last, isA<KeyUpEvent>());
   });
 
-  testWidgets('本地确认键不传给远端，方向键和普通键保持原来的处理', (tester) async {
+  testWidgets(
+      'Local confirm stays local while arrow and regular keys use the original handler',
+      (tester) async {
     final input = _RecordingInputModel();
     var confirmations = 0;
     await tester.pumpWidget(MaterialApp(
